@@ -1,0 +1,7 @@
+.DS_Store
+.vscode/
+
+# Transaction files or exports
+*.csv
+*.xlsx
+*.xml

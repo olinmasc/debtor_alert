@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useDeferredValue, useCallback } from "react";
 import {
   IndianRupee,
   AlertTriangle,
@@ -8,6 +8,7 @@ import {
   TrendingUp,
   Search,
   RefreshCw,
+  X,
 } from "lucide-react";
 import InvoiceTable from "./InvoiceTable";
 
@@ -37,7 +38,7 @@ export default function DashboardTab({ refreshKey }: DashboardTabProps) {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
-  const fetchInvoices = async () => {
+  const fetchInvoices = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -50,44 +51,43 @@ export default function DashboardTab({ refreshKey }: DashboardTabProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchInvoices();
-  }, [refreshKey]);
+  }, [refreshKey, fetchInvoices]);
+
+  // ── Deferred Search ────────────────────────────────────────────────
+  const deferredSearch = useDeferredValue(search);
 
   // ── Computed stats ─────────────────────────────────────────────────
-  const totalOutstanding = invoices.reduce(
-    (sum, inv) => sum + Number(inv.pending_amount),
-    0
-  );
-  const criticalCount = invoices.filter(
-    (i) => (i.days_overdue || 0) > 30
-  ).length;
-  const overdueCount = invoices.filter(
-    (i) => (i.days_overdue || 0) > 0
-  ).length;
-  const avgOverdue =
-    invoices.length > 0
-      ? Math.round(
-          invoices.reduce((s, i) => s + (i.days_overdue || 0), 0) /
-            invoices.length
-        )
-      : 0;
+  const { totalOutstanding, criticalCount, overdueCount, avgOverdue } = useMemo(() => {
+    const sum = invoices.reduce((acc, inv) => acc + Number(inv.pending_amount), 0);
+    const critical = invoices.filter((i) => (i.days_overdue || 0) > 30).length;
+    const overdue = invoices.filter((i) => (i.days_overdue || 0) > 0).length;
+    const avg =
+      invoices.length > 0
+        ? Math.round(invoices.reduce((s, i) => s + (i.days_overdue || 0), 0) / invoices.length)
+        : 0;
+
+    return { totalOutstanding: sum, criticalCount: critical, overdueCount: overdue, avgOverdue: avg };
+  }, [invoices]);
 
   // ── Filter ─────────────────────────────────────────────────────────
-  const filtered = invoices.filter((inv) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (
-      (inv.debtor_name || "").toLowerCase().includes(q) ||
-      inv.invoice_no.toLowerCase().includes(q) ||
-      (inv.contact_name || "").toLowerCase().includes(q)
-    );
-  });
+  const filtered = useMemo(() => {
+    return invoices.filter((inv) => {
+      if (!deferredSearch) return true;
+      const q = deferredSearch.toLowerCase();
+      return (
+        (inv.debtor_name || "").toLowerCase().includes(q) ||
+        inv.invoice_no.toLowerCase().includes(q) ||
+        (inv.contact_name || "").toLowerCase().includes(q)
+      );
+    });
+  }, [invoices, deferredSearch]);
 
   // ── Stats cards data ──────────────────────────────────────────────
-  const stats = [
+  const stats = useMemo(() => [
     {
       label: "Total Outstanding",
       value: `₹${totalOutstanding.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
@@ -115,8 +115,8 @@ export default function DashboardTab({ refreshKey }: DashboardTabProps) {
       icon: TrendingUp,
       color: "var(--warning-yellow)",
       bg: "var(--warning-yellow-bg)",
-    },
-  ];
+    }
+  ], [totalOutstanding, overdueCount, criticalCount, avgOverdue]);
 
   return (
     <div>
@@ -218,8 +218,25 @@ export default function DashboardTab({ refreshKey }: DashboardTabProps) {
             placeholder="Search by debtor, invoice no…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ paddingLeft: 36 }}
+            style={{ paddingLeft: 36, paddingRight: 36 }}
           />
+          {search && (
+            <button
+              className="btn-ghost"
+              onClick={() => setSearch("")}
+              style={{
+                position: "absolute",
+                right: 4,
+                top: "50%",
+                transform: "translateY(-50%)",
+                padding: "6px",
+                color: "var(--text-muted)",
+              }}
+              title="Clear search"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
 
         <button

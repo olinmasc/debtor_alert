@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { MessageCircle, Copy, Check, Phone, CheckCircle2 } from "lucide-react";
 
 interface Invoice {
@@ -59,7 +59,7 @@ function getOverdueConfig(days: number) {
   return { rowClass: "", badge: "badge-green", label: "Current" };
 }
 
-export default function InvoiceTable({
+function InvoiceTable({
   invoices,
   loading,
   onRemind,
@@ -375,3 +375,5 @@ export default function InvoiceTable({
     </div>
   );
 }
+
+export default React.memo(InvoiceTable);

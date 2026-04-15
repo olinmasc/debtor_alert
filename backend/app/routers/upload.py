@@ -274,8 +274,9 @@ async def upload_file(
     errors: list[str] = []
     seen_invoice_nos: set[str] = set()
 
-    # cache debtor lookups to avoid repeated queries
-    debtor_cache: dict[str, Debtor] = {}
+    # pre-fetch caches to avoid repeated O(N) database queries in the loop
+    debtor_cache: dict[str, Debtor] = {d.tally_ledger_name: d for d in db.query(Debtor).all()}
+    invoice_cache: dict[str, Invoice] = {i.invoice_no: i for i in db.query(Invoice).all()}
 
     for idx, row in df.iterrows():
         try:
@@ -303,19 +304,15 @@ async def upload_file(
             if ledger_name in debtor_cache:
                 debtor = debtor_cache[ledger_name]
             else:
-                debtor = db.query(Debtor).filter(
-                    Debtor.tally_ledger_name == ledger_name
-                ).first()
-                if debtor is None:
-                    debtor = Debtor(tally_ledger_name=ledger_name)
-                    db.add(debtor)
-                    db.flush()  # get the id immediately
-                    counters["debtors_created"] += 1
+                debtor = Debtor(tally_ledger_name=ledger_name)
+                db.add(debtor)
+                db.flush()  # get the id immediately
+                counters["debtors_created"] += 1
                 debtor_cache[ledger_name] = debtor
 
             # ── upsert invoice ────────────────────────────────────────
             seen_invoice_nos.add(inv_no)
-            invoice = db.query(Invoice).filter(Invoice.invoice_no == inv_no).first()
+            invoice = invoice_cache.get(inv_no)
 
             if invoice is None:
                 invoice = Invoice(
@@ -326,6 +323,7 @@ async def upload_file(
                     status="Open",
                 )
                 db.add(invoice)
+                invoice_cache[inv_no] = invoice
                 counters["invoices_created"] += 1
             else:
                 # update existing — refresh amount and re-open if it was paid

@@ -74,6 +74,7 @@ Please settle this at earliest.`,
 const VARIABLES = [
   { name: "[Debtor Name]", desc: "Tally ledger / company name" },
   { name: "[Invoice No]", desc: "Invoice or voucher number" },
+  { name: "[Invoice Date]", desc: "Date of the invoice" },
   { name: "[Pending Amount]", desc: "Outstanding amount in ₹" },
   { name: "[Days Overdue]", desc: "Days since invoice date" },
 ];
@@ -81,6 +82,7 @@ const VARIABLES = [
 const PREVIEW_DATA = {
   "[Debtor Name]": "Sharma Enterprises",
   "[Invoice No]": "INV-2025-0042",
+  "[Invoice Date]": "15 Jan 2025",
   "[Pending Amount]": "1,25,000.00",
   "[Days Overdue]": "23",
 };

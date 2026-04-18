@@ -10,9 +10,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 
+from pydantic import BaseModel
 from ..database import get_db
 from ..models import Invoice, Debtor
-from ..schemas import InvoiceOut
+from ..schemas import InvoiceOut, InvoiceOverrideUpdate
 
 router = APIRouter()
 
@@ -36,22 +37,28 @@ def list_invoices(
 
     results: list[InvoiceOut] = []
     for inv in invoices:
-        days_overdue = (today - inv.invoice_date).days if inv.invoice_date else 0
-        results.append(
-            InvoiceOut(
-                invoice_no=inv.invoice_no,
-                debtor_id=inv.debtor_id,
-                invoice_date=inv.invoice_date,
-                pending_amount=inv.pending_amount,
-                status=inv.status,
-                last_reminded_date=inv.last_reminded_date,
-                reminder_count=inv.reminder_count,
-                debtor_name=inv.debtor.tally_ledger_name if inv.debtor else None,
-                contact_name=inv.debtor.contact_name if inv.debtor else None,
-                phone_number=inv.debtor.phone_number if inv.debtor else None,
-                days_overdue=days_overdue,
+        if inv.manual_days_overdue is not None:
+            days_overdue = inv.manual_days_overdue
+        else:
+            days_overdue = (today - inv.invoice_date).days if inv.invoice_date else 0
+            
+        if days_overdue >= 30:
+            results.append(
+                InvoiceOut(
+                    invoice_no=inv.invoice_no,
+                    debtor_id=inv.debtor_id,
+                    invoice_date=inv.invoice_date,
+                    pending_amount=inv.pending_amount,
+                    status=inv.status,
+                    last_reminded_date=inv.last_reminded_date,
+                    reminder_count=inv.reminder_count,
+                    debtor_name=inv.debtor.tally_ledger_name if inv.debtor else None,
+                    contact_name=inv.debtor.contact_name if inv.debtor else None,
+                    phone_number=inv.debtor.phone_number if inv.debtor else None,
+                    days_overdue=days_overdue,
+                    manual_days_overdue=inv.manual_days_overdue,
+                )
             )
-        )
 
     # sort by most overdue first
     results.sort(key=lambda x: x.days_overdue or 0, reverse=True)
@@ -97,4 +104,25 @@ def mark_invoice_paid(
     return {
         "invoice_no": invoice.invoice_no,
         "status": invoice.status,
+    }
+
+
+@router.patch("/invoices/{invoice_no}/overdue_override")
+def override_invoice_overdue(
+    invoice_no: str,
+    update_data: InvoiceOverrideUpdate,
+    db: Session = Depends(get_db),
+):
+    """Override the computed days overdue manually."""
+    invoice = db.query(Invoice).filter(Invoice.invoice_no == invoice_no).first()
+    if not invoice:
+        raise HTTPException(404, f"Invoice '{invoice_no}' not found.")
+
+    invoice.manual_days_overdue = update_data.manual_days_overdue
+    db.commit()
+    db.refresh(invoice)
+
+    return {
+        "invoice_no": invoice.invoice_no,
+        "manual_days_overdue": invoice.manual_days_overdue,
     }

@@ -43,9 +43,12 @@ class InvoiceOut(BaseModel):
     contact_name: Optional[str] = None
     phone_number: Optional[str] = None
     days_overdue: Optional[int] = None
+    manual_days_overdue: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 
+class InvoiceOverrideUpdate(BaseModel):
+    manual_days_overdue: Optional[int] = None
 
 # ── Upload Result ───────────────────────────────────────────────────────
 

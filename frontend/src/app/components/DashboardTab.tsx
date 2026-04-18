@@ -26,6 +26,7 @@ interface Invoice {
   contact_name: string | null;
   phone_number: string | null;
   days_overdue: number | null;
+  manual_days_overdue: number | null;
 }
 
 interface DashboardTabProps {
@@ -291,6 +292,14 @@ export default function DashboardTab({ refreshKey }: DashboardTabProps) {
           onMarkDone={async (invoiceNo) => {
             await fetch(`${API}/api/invoices/${invoiceNo}/paid`, {
               method: "PATCH",
+            });
+            fetchInvoices();
+          }}
+          onSetOverdue={async (invoiceNo, manualDays) => {
+            await fetch(`${API}/api/invoices/${invoiceNo}/overdue_override`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ manual_days_overdue: manualDays }),
             });
             fetchInvoices();
           }}

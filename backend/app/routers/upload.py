@@ -28,21 +28,21 @@ router = APIRouter()
 # Tally exports vary wildly.  We try several known patterns.
 COLUMN_MAP = {
     "tally_ledger_name": [
-        "party", "party name", "ledger", "ledger name",
+        "party", "party name", "partyname", "ledger", "ledger name", "ledgername",
         "customer", "customer name", "debtor", "debtor name",
         "particulars", "name", "tally_ledger_name",
     ],
     "invoice_no": [
         "invoice no", "invoice no.", "invoice number", "inv no",
-        "bill no", "bill number", "ref no", "voucher no",
-        "vch no", "reference", "invoice_no",
+        "bill no", "bill number", "ref no", "voucher no", "voucher number",
+        "vouchernumber", "vch no", "reference", "invoice_no",
     ],
     "date": [
         "date", "invoice date", "bill date", "voucher date",
-        "inv date", "invoice_date",
+        "inv date", "invoice_date", "vchstatusdate",
     ],
     "amount": [
-        "amount", "pending amount", "outstanding", "balance",
+        "party amount", "party_amount", "amount", "pending amount", "outstanding", "balance",
         "pending", "due amount", "receivable", "debit",
         "pending_amount",
     ],
@@ -82,11 +82,14 @@ def _sanitize_xml(raw_bytes: bytes) -> bytes:
       - Bare & characters not escaped as &amp;
       - Control characters embedded directly in text
     """
-    # Decode to string — try utf-8 first, then latin-1 as fallback
+    # Decode to string — try utf-8, then utf-16, then latin-1 as fallback
     try:
-        text = raw_bytes.decode("utf-8", errors="replace")
-    except Exception:
-        text = raw_bytes.decode("latin-1", errors="replace")
+        text = raw_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        try:
+            text = raw_bytes.decode("utf-16")
+        except UnicodeDecodeError:
+            text = raw_bytes.decode("latin-1", errors="replace")
 
     # 1. Remove invalid XML character references (&#0; through &#31; except tab/newline/cr)
     #    Also handles &#x0; hex variants
@@ -135,15 +138,34 @@ def _parse_xml(raw_bytes: bytes) -> pd.DataFrame:
             # Collect attributes
             for attr_key, attr_val in elem.attrib.items():
                 row_data[attr_key] = attr_val
+                
             # Collect direct child text
             for child in elem:
                 if child.text and child.text.strip():
                     row_data[child.tag] = child.text.strip()
-                # Go one level deeper for nested structures
-                for subchild in child:
-                    if subchild.text and subchild.text.strip():
-                        key = f"{child.tag}_{subchild.tag}" if child.tag != subchild.tag else subchild.tag
-                        row_data[key] = subchild.text.strip()
+                    
+            # Extract total invoice amount smartly from the Ledger
+            party_amount = None
+            for child in elem.findall("LEDGERENTRIES.LIST"):
+                is_party = child.findtext("ISPARTYLEDGER")
+                ledger_name = child.findtext("LEDGERNAME")
+                party_name = elem.findtext("PARTYNAME")
+                
+                if (is_party and is_party.upper() == "YES") or (ledger_name and party_name and str(ledger_name).upper() == str(party_name).upper()):
+                    party_amount = child.findtext("AMOUNT")
+                    break
+            
+            if party_amount:
+                row_data["PARTY_AMOUNT"] = party_amount
+            else:
+                # Go one level deeper for nested structures ONLY if no Party Amount explicitly found
+                for child in elem:
+                    for subchild in child:
+                        if subchild.text and subchild.text.strip():
+                            key = f"{child.tag}_{subchild.tag}" if child.tag != subchild.tag else subchild.tag
+                            if key not in row_data:
+                                row_data[key] = subchild.text.strip()
+                                
             if row_data:
                 rows.append(row_data)
     else:
@@ -175,8 +197,15 @@ def _find_header_row(raw_bytes: bytes, filename: str) -> pd.DataFrame:
     """
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "csv"
 
+    # Detect XML explicitly bypassing extensions, with proper sanitization/encoding buffer
+    try:
+        xml_check_bytes = _sanitize_xml(raw_bytes[:2048])
+        is_xml_content = b"<" in xml_check_bytes and (b"<ENVELOPE>" in xml_check_bytes or b"<TALLY" in xml_check_bytes or b"VOUCHER" in xml_check_bytes)
+    except Exception:
+        is_xml_content = False
+
     # ── XML path ───────────────────────────────────────────────────────
-    if ext == "xml":
+    if ext == "xml" or is_xml_content:
         return _parse_xml(raw_bytes)
 
     # ── CSV / Excel path ──────────────────────────────────────────────
@@ -245,9 +274,15 @@ async def upload_file(
     # ── 1. Validate file type ──────────────────────────────────────────
     if not file.filename:
         raise HTTPException(400, "No file provided.")
+    
     ext = file.filename.rsplit(".", 1)[-1].lower()
+    # Explicitly allow uploads with both .csv and .xml extensions
     if ext not in ("csv", "xlsx", "xls", "xml"):
         raise HTTPException(400, f"Unsupported file type '.{ext}'. Upload CSV, Excel, or XML.")
+        
+    # We explicitly DISABLE strict MIME-type or 'magic byte' checking here.
+    # Tally exports XML data under the `.csv` extension, creating MIME/extension mismatches.
+    # We accept the file purely as raw bytes to pass to our custom parser.
 
     raw = await file.read()
     if len(raw) == 0:
@@ -278,6 +313,9 @@ async def upload_file(
     debtor_cache: dict[str, Debtor] = {d.tally_ledger_name: d for d in db.query(Debtor).all()}
     invoice_cache: dict[str, Invoice] = {i.invoice_no: i for i in db.query(Invoice).all()}
 
+    # --- Pre-Aggregation Phase ---
+    aggregated_invoices = {}
+
     for idx, row in df.iterrows():
         try:
             # ── extract values ────────────────────────────────────────
@@ -300,6 +338,29 @@ async def upload_file(
             amt_col = col_map.get("amount")
             amount = _clean_amount(row.get(amt_col) if amt_col else 0)
 
+            # ── aggregate row data ────────────────────────────────────
+            if inv_no not in aggregated_invoices:
+                aggregated_invoices[inv_no] = {
+                    "ledger_name": ledger_name,
+                    "invoice_date": inv_date,
+                    "amount": amount
+                }
+            else:
+                aggregated_invoices[inv_no]["amount"] += amount
+                # Ensure the root date isn't lost if a sub-row has it
+                if not aggregated_invoices[inv_no]["invoice_date"] and inv_date:
+                    aggregated_invoices[inv_no]["invoice_date"] = inv_date
+
+        except Exception as e:
+            errors.append(f"Row {idx}: {str(e)}")
+
+    # --- Upsert Phase ---
+    for inv_no, data in aggregated_invoices.items():
+        try:
+            ledger_name = data["ledger_name"]
+            amount = data["amount"]
+            inv_date = data["invoice_date"]
+            
             # ── upsert debtor ─────────────────────────────────────────
             if ledger_name in debtor_cache:
                 debtor = debtor_cache[ledger_name]
@@ -334,7 +395,7 @@ async def upload_file(
                 counters["invoices_updated"] += 1
 
         except Exception as e:
-            errors.append(f"Row {idx}: {str(e)}")
+            errors.append(f"Invoice {inv_no}: {str(e)}")
 
     # ── 4. Auto-reconciliation ─────────────────────────────────────────
     # Any invoice currently 'Open' in the DB that was NOT in the uploaded

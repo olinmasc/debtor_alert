@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { MessageCircle, Copy, Check, Phone, CheckCircle2 } from "lucide-react";
+import { MessageCircle, Copy, Check, Phone, CheckCircle2, Clock } from "lucide-react";
 
 interface Invoice {
   invoice_no: string;
@@ -15,6 +15,7 @@ interface Invoice {
   contact_name: string | null;
   phone_number: string | null;
   days_overdue: number | null;
+  manual_days_overdue: number | null;
 }
 
 interface InvoiceTableProps {
@@ -22,6 +23,7 @@ interface InvoiceTableProps {
   loading: boolean;
   onRemind: (invoiceNo: string) => void;
   onMarkDone?: (invoiceNo: string) => void;
+  onSetOverdue?: (invoiceNo: string, days: number | null) => void;
 }
 
 /** Default templates stored in localStorage */
@@ -40,9 +42,18 @@ function getTemplate(reminderCount: number): string {
 
 function buildMessage(invoice: Invoice): string {
   const template = getTemplate(invoice.reminder_count);
+  const formattedDate = invoice.invoice_date 
+    ? new Date(invoice.invoice_date).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "—";
+
   return template
     .replace(/\[Debtor Name\]/g, invoice.debtor_name || invoice.contact_name || "Sir/Madam")
     .replace(/\[Invoice No\]/g, invoice.invoice_no)
+    .replace(/\[Invoice Date\]/g, formattedDate)
     .replace(
       /\[Pending Amount\]/g,
       Number(invoice.pending_amount).toLocaleString("en-IN", {
@@ -64,6 +75,7 @@ function InvoiceTable({
   loading,
   onRemind,
   onMarkDone,
+  onSetOverdue,
 }: InvoiceTableProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -88,6 +100,21 @@ function InvoiceTable({
     const url = `https://wa.me/${digits}?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
     onRemind(invoice.invoice_no);
+  };
+
+  const handleSetOverdue = (invoice: Invoice) => {
+    if (!onSetOverdue) return;
+    const currentVal = invoice.manual_days_overdue !== null ? String(invoice.manual_days_overdue) : "";
+    const res = window.prompt(`Set manual overdue days for ${invoice.invoice_no}\n(Leave blank to revert to automatic calculation):`, currentVal);
+    
+    if (res === null) return; // cancelled
+    
+    const parsed = parseInt(res.trim(), 10);
+    if (res.trim() === "" || isNaN(parsed)) {
+      onSetOverdue(invoice.invoice_no, null);
+    } else {
+      onSetOverdue(invoice.invoice_no, parsed);
+    }
   };
 
   if (loading) {
@@ -292,9 +319,14 @@ function InvoiceTable({
 
                   {/* Days Overdue */}
                   <td style={{ padding: "12px 16px" }}>
-                    <span className={`badge ${cfg.badge}`}>
-                      {days} days — {cfg.label}
-                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span className={`badge ${cfg.badge}`}>
+                        {days} days — {cfg.label}
+                      </span>
+                      {inv.manual_days_overdue !== null && (
+                        <span title="Manually overriden" style={{ fontSize: "12px", cursor: "help" }}>✏️</span>
+                      )}
+                    </div>
                   </td>
 
                   {/* Reminders */}
@@ -362,6 +394,22 @@ function InvoiceTable({
                         >
                           <CheckCircle2 size={14} />
                           Done
+                        </button>
+                      )}
+                      
+                      {onSetOverdue && (
+                        <button
+                          className="btn-ghost"
+                          onClick={() => handleSetOverdue(inv)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                          }}
+                          title="Set Manual Overdue Days"
+                        >
+                          <Clock size={14} />
+                          Set
                         </button>
                       )}
                     </div>

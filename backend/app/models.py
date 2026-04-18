@@ -43,6 +43,7 @@ class Invoice(Base):
     invoice_date = Column(Date, nullable=True)
     pending_amount = Column(Numeric(14, 2), nullable=False, default=0)
     status = Column(String(10), nullable=False, default="Open", index=True)
+    manual_days_overdue = Column(Integer, nullable=True)
     last_reminded_date = Column(DateTime(timezone=True), nullable=True)
     reminder_count = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

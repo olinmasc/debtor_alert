@@ -9,6 +9,7 @@ Performs:
 """
 
 import io
+import math
 import re
 import xml.etree.ElementTree as ET
 from datetime import datetime
@@ -230,21 +231,24 @@ def _find_header_row(raw_bytes: bytes, filename: str) -> pd.DataFrame:
 
 def _clean_amount(val) -> float:
     """Parse an amount string that may contain commas, currency symbols, Dr/Cr suffixes."""
-    if pd.isna(val) or val is None:
+    if pd.isna(val) or val is None or str(val).strip().lower() in ("nan", "none", "null", ""):
         return 0.0
     s = str(val).strip()
     # remove common currency symbols and Dr/Cr
     s = re.sub(r"[₹$€,]", "", s)
     s = re.sub(r"\s*(Dr|Cr)\.?\s*$", "", s, flags=re.IGNORECASE)
     try:
-        return abs(float(s))
+        f = float(s)
+        if math.isnan(f) or math.isinf(f):
+            return 0.0
+        return abs(f)
     except ValueError:
         return 0.0
 
 
 def _clean_date(val) -> Optional[datetime]:
     """Try multiple date formats common in Tally exports."""
-    if pd.isna(val) or val is None:
+    if pd.isna(val) or val is None or str(val).strip().lower() in ("nan", "none", "null", ""):
         return None
     s = str(val).strip()
     for fmt in ("%d-%b-%Y", "%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d.%m.%Y", "%m/%d/%Y"):
@@ -254,7 +258,10 @@ def _clean_date(val) -> Optional[datetime]:
             continue
     # last resort: let pandas try
     try:
-        return pd.to_datetime(s).date()
+        dt = pd.to_datetime(s)
+        if pd.isna(dt):
+            return None
+        return dt.date()
     except Exception:
         return None
 
@@ -320,7 +327,7 @@ async def upload_file(
         try:
             # ── extract values ────────────────────────────────────────
             ledger_raw = row.get(col_map["tally_ledger_name"])
-            if pd.isna(ledger_raw) or not str(ledger_raw).strip():
+            if pd.isna(ledger_raw) or not str(ledger_raw).strip() or str(ledger_raw).strip().lower() in ("nan", "none", "null"):
                 continue  # skip blank rows
             ledger_name = str(ledger_raw).strip()
 

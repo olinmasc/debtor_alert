@@ -14,9 +14,9 @@ import {
   Trash2,
   FileText,
   Clock,
+  CloudLightning,
 } from "lucide-react";
-
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { invoke } from "@tauri-apps/api/core";
 
 interface UploadResult {
   debtors_created: number;
@@ -63,11 +63,8 @@ export default function ImportSyncTab({ onUploadComplete }: ImportSyncTabProps) 
   // Fetch debtors missing phone
   const fetchMissingPhone = useCallback(async () => {
     try {
-      const res = await fetch(`${API}/api/debtors?missing_phone=true`);
-      if (res.ok) {
-        const data = await res.json();
-        setMissingPhoneDebtors(data);
-      }
+      const data: Debtor[] = await invoke("get_debtors", { missingPhone: true });
+      setMissingPhoneDebtors(data);
     } catch {
       /* silently fail */
     }
@@ -76,11 +73,8 @@ export default function ImportSyncTab({ onUploadComplete }: ImportSyncTabProps) 
   // Fetch upload history
   const fetchUploads = useCallback(async () => {
     try {
-      const res = await fetch(`${API}/api/uploads`);
-      if (res.ok) {
-        const data = await res.json();
-        setUploads(data);
-      }
+      const data: UploadHistoryItem[] = await invoke("get_uploads");
+      setUploads(data);
     } catch {
       /* silently fail */
     }
@@ -91,32 +85,43 @@ export default function ImportSyncTab({ onUploadComplete }: ImportSyncTabProps) 
     fetchUploads();
   }, [fetchMissingPhone, fetchUploads]);
 
+  // ── Local Tally Sync ────────────────────────────────────────────────
+  const handleTallySync = async () => {
+    setUploading(true);
+    setResult(null);
+    setUploadError(null);
+    try {
+      const data: UploadResult = await invoke("fetch_tally_prime_local", { port: 9000 });
+      setResult(data);
+      onUploadComplete();
+      fetchMissingPhone();
+      fetchUploads();
+    } catch (err: unknown) {
+      setUploadError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setUploading(false);
+    }
+  };
+
   // ── File Upload ─────────────────────────────────────────────────────
   const handleFile = async (file: File) => {
     setUploading(true);
     setResult(null);
     setUploadError(null);
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     try {
-      const res = await fetch(`${API}/api/upload`, {
-        method: "POST",
-        body: formData,
+      const text = await file.text();
+      const data: UploadResult = await invoke("process_tally_xml", { 
+          xmlData: text, 
+          filename: file.name 
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: res.statusText }));
-        throw new Error(err.detail || `Error ${res.status}`);
-      }
-      const data: UploadResult = await res.json();
       setResult(data);
       onUploadComplete();
       fetchMissingPhone();
       fetchUploads();
     } catch (err: unknown) {
       setUploadError(
-        err instanceof Error ? err.message : "Upload failed"
+        err instanceof Error ? err.message : String(err)
       );
     } finally {
       setUploading(false);
@@ -145,21 +150,15 @@ export default function ImportSyncTab({ onUploadComplete }: ImportSyncTabProps) 
     const fullPhone = `+91${digits}`; // always store with +91 prefix
     setSavingId(debtorId);
     try {
-      const res = await fetch(`${API}/api/debtors/${debtorId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone_number: fullPhone }),
+      await invoke("update_debtor", { debtorId, phoneNumber: fullPhone });
+      setMissingPhoneDebtors((prev) =>
+        prev.filter((d) => d.id !== debtorId)
+      );
+      setPhoneInputs((prev) => {
+        const copy = { ...prev };
+        delete copy[debtorId];
+        return copy;
       });
-      if (res.ok) {
-        setMissingPhoneDebtors((prev) =>
-          prev.filter((d) => d.id !== debtorId)
-        );
-        setPhoneInputs((prev) => {
-          const copy = { ...prev };
-          delete copy[debtorId];
-          return copy;
-        });
-      }
     } catch {
       /* silently fail */
     } finally {
@@ -176,13 +175,11 @@ export default function ImportSyncTab({ onUploadComplete }: ImportSyncTabProps) 
 
     setDeleting(true);
     try {
-      const res = await fetch(`${API}/api/data`, { method: "DELETE" });
-      if (res.ok) {
-        setUploads([]);
-        setMissingPhoneDebtors([]);
-        setResult(null);
-        onUploadComplete(); // refresh dashboard
-      }
+      await invoke("delete_data");
+      setUploads([]);
+      setMissingPhoneDebtors([]);
+      setResult(null);
+      onUploadComplete(); // refresh dashboard
     } catch {
       /* silently fail */
     } finally {
@@ -194,10 +191,8 @@ export default function ImportSyncTab({ onUploadComplete }: ImportSyncTabProps) 
   const handleDeleteUpload = async (id: number) => {
     if (!window.confirm("Remove this upload record from history? (This does not undo the data imported)")) return;
     try {
-      const res = await fetch(`${API}/api/uploads/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setUploads((prev) => prev.filter((u) => u.id !== id));
-      }
+      await invoke("delete_upload", { uploadId: id });
+      setUploads((prev) => prev.filter((u) => u.id !== id));
     } catch {
       /* silently fail */
     }
@@ -311,12 +306,22 @@ export default function ImportSyncTab({ onUploadComplete }: ImportSyncTabProps) 
                 margin: "0 0 16px",
               }}
             >
-              or click to browse — supports .csv, .xlsx, .xls, .xml
+              Supports ONLY Tally Export XML files (.xml)
             </p>
-            <button className="btn-primary" style={{ pointerEvents: "none" }}>
-              <Upload size={14} style={{ marginRight: 6 }} />
-              Select File
-            </button>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+                <button className="btn-primary" style={{ pointerEvents: "none" }}>
+                  <Upload size={14} style={{ marginRight: 6 }} />
+                  Select XML File
+                </button>
+                <button 
+                  className="btn-primary" 
+                  style={{ background: 'var(--success)', border: 'none' }}
+                  onClick={(e) => { e.stopPropagation(); handleTallySync(); }}
+                >
+                  <CloudLightning size={14} style={{ marginRight: 6 }} />
+                  Sync Live from Tally
+                </button>
+            </div>
           </div>
         )}
       </div>

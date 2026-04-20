@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useDeferredValue, useCallback } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import {
   IndianRupee,
   AlertTriangle,
@@ -43,9 +44,7 @@ export default function DashboardTab({ refreshKey }: DashboardTabProps) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API}/api/invoices?status=Open`);
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json();
+      const data: Invoice[] = await invoke("get_invoices", { status: "Open" });
       setInvoices(data);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to fetch invoices");
@@ -284,23 +283,15 @@ export default function DashboardTab({ refreshKey }: DashboardTabProps) {
           invoices={filtered}
           loading={loading}
           onRemind={async (invoiceNo) => {
-            await fetch(`${API}/api/invoices/${invoiceNo}/remind`, {
-              method: "PATCH",
-            });
+            await invoke("remind_invoice", { invoiceNo });
             fetchInvoices();
           }}
           onMarkDone={async (invoiceNo) => {
-            await fetch(`${API}/api/invoices/${invoiceNo}/paid`, {
-              method: "PATCH",
-            });
+            await invoke("mark_invoice_paid", { invoiceNo });
             fetchInvoices();
           }}
           onSetOverdue={async (invoiceNo, manualDays) => {
-            await fetch(`${API}/api/invoices/${invoiceNo}/overdue_override`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ manual_days_overdue: manualDays }),
-            });
+            await invoke("override_invoice_overdue", { invoiceNo, manualDaysOverdue: manualDays });
             fetchInvoices();
           }}
         />

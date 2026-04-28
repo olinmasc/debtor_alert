@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:info": "tauri info",
+    "tauri:build-windows": "tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.10.1",

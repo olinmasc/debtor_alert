@@ -1,0 +1,103 @@
+
+> frontend@0.1.0 lint
+> eslint
+
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/debug/build/app-ada97b6e6c22e4a6/out/__global-api-script.js
+  1:1  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/debug/build/app-f7165ee3f88ce401/out/__global-api-script.js
+  1:1  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-8065784707466593/out/__global-api-script.js
+  1:1  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-8065784707466593/out/tauri-codegen-assets/4f5eeb4b6c4ae6094660bb938881ae5129c04929996548162e5f3ad6c528f3b0.js
+  1:0  error  Parsing error: Invalid character
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-8065784707466593/out/tauri-codegen-assets/607ca753f5dd313d7729323243c1e43cbc7e13a27bd80090a6ed02f2ca54727d.js
+  1:0  error  Parsing error: File appears to be binary
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-8065784707466593/out/tauri-codegen-assets/62139d90469bc38f018ddcebe86cdeb40691390e9945c31f9682de630e3f2c61.js
+  1:0  error  Parsing error: Invalid character
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-8065784707466593/out/tauri-codegen-assets/7120b421e23e327a35c5736fd319d1dab5ec68fa6087b6eb42fd8c43dbe6e603.js
+  1:2  error  Parsing error: Invalid character
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-8065784707466593/out/tauri-codegen-assets/913fbe9703cb6d1071d91f7ba02b7a83ceeb791145df773536f182c46f99303c.js
+  1:0  error  Parsing error: Invalid character
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-8065784707466593/out/tauri-codegen-assets/a9efa008b05aedf6d791817ab38a9eca847a3ec1aa7b25bd1190eaa99a121b78.js
+  1:0  error  Parsing error: Invalid character
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-8065784707466593/out/tauri-codegen-assets/bd94a472622c0f1d2d14bf017c2af303dd1c8db9313bb104026d2dacafc45b23.js
+  1:0  error  Parsing error: Invalid character
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-8065784707466593/out/tauri-codegen-assets/e4a85f32e1318e093e6ae9e713dbc3b0fdd6a492e46aa585b2d720b859d51ca4.js
+  1:0  error  Parsing error: File appears to be binary
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-8065784707466593/out/tauri-codegen-assets/e9092c3b2dc04be9ac84bf750017a5d54ddbd67b25f99f17831ae3da2b249d08.js
+  1:0  error  Parsing error: Invalid character
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-8065784707466593/out/tauri-codegen-assets/f37d5dd08e02d322f7c06a25d851209dc902ab41d2a701a4c7e67035525c9bf7.js
+  1:0  error  Parsing error: Invalid character
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-bc4c50dea20a6a77/out/__global-api-script.js
+  1:1  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-bc4c50dea20a6a77/out/tauri-codegen-assets/4f5eeb4b6c4ae6094660bb938881ae5129c04929996548162e5f3ad6c528f3b0.js
+  1:0  error  Parsing error: Invalid character
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-bc4c50dea20a6a77/out/tauri-codegen-assets/607ca753f5dd313d7729323243c1e43cbc7e13a27bd80090a6ed02f2ca54727d.js
+  1:0  error  Parsing error: File appears to be binary
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-bc4c50dea20a6a77/out/tauri-codegen-assets/62139d90469bc38f018ddcebe86cdeb40691390e9945c31f9682de630e3f2c61.js
+  1:0  error  Parsing error: Invalid character
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-bc4c50dea20a6a77/out/tauri-codegen-assets/7120b421e23e327a35c5736fd319d1dab5ec68fa6087b6eb42fd8c43dbe6e603.js
+  1:2  error  Parsing error: Invalid character
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-bc4c50dea20a6a77/out/tauri-codegen-assets/913fbe9703cb6d1071d91f7ba02b7a83ceeb791145df773536f182c46f99303c.js
+  1:0  error  Parsing error: Invalid character
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-bc4c50dea20a6a77/out/tauri-codegen-assets/a5f508140d9cc56bd0f6b1c66d61794c5f9112c0568698f1976d7e4f58fcdfd5.js
+  1:0  error  Parsing error: Invalid character
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-bc4c50dea20a6a77/out/tauri-codegen-assets/a9efa008b05aedf6d791817ab38a9eca847a3ec1aa7b25bd1190eaa99a121b78.js
+  1:0  error  Parsing error: Invalid character
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-bc4c50dea20a6a77/out/tauri-codegen-assets/bd94a472622c0f1d2d14bf017c2af303dd1c8db9313bb104026d2dacafc45b23.js
+  1:0  error  Parsing error: Invalid character
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-bc4c50dea20a6a77/out/tauri-codegen-assets/e4a85f32e1318e093e6ae9e713dbc3b0fdd6a492e46aa585b2d720b859d51ca4.js
+  1:0  error  Parsing error: File appears to be binary
+
+/Users/olinmascarenhas/Desktop/ting_ling/src-tauri/target/release/build/app-bc4c50dea20a6a77/out/tauri-codegen-assets/f37d5dd08e02d322f7c06a25d851209dc902ab41d2a701a4c7e67035525c9bf7.js
+  1:0  error  Parsing error: Invalid character
+
+/Users/olinmascarenhas/Desktop/ting_ling/src/app/components/DashboardTab.tsx
+  16:7  warning  'API' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/olinmascarenhas/Desktop/ting_ling/src/app/components/ImportSyncTab.tsx
+  138:5  warning  React Hook useCallback has a missing dependency: 'handleFile'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/olinmascarenhas/Desktop/ting_ling/src/app/components/TemplatesTab.tsx
+  101:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/olinmascarenhas/Desktop/ting_ling/src/app/components/TemplatesTab.tsx:101:9
+   99 |     if (stored) {
+  100 |       try {
+> 101 |         setTemplates(JSON.parse(stored));
+      |         ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  102 |       } catch {
+  103 |         /* use defaults */
+  104 |       }  react-hooks/set-state-in-effect
+
+✖ 27 problems (21 errors, 6 warnings)
+

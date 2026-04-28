@@ -76,8 +76,13 @@ pub fn process_tally_xml(state: State<'_, AppState>, xml_data: String, filename:
                     if !text.is_empty() {
                         current_party = text;
                     }
-                } else if current_tag == "BILLNO" || current_tag == "VOUCHERNUMBER" || current_tag == "NAME" {
+                } else if current_tag == "BILLNO" || current_tag == "VOUCHERNUMBER" {
                     if !text.is_empty() {
+                        current_invoice_no = text;
+                    }
+                } else if current_tag == "NAME" {
+                    // NAME tag often contains GUIDs/UUIDs - only use it if it looks like a real invoice number (starts with U-, etc)
+                    if !text.is_empty() && (text.starts_with("U-") || text.starts_with("U/") || text.contains('/')) {
                         current_invoice_no = text;
                     }
                 } else if current_tag == "DATE" || current_tag == "BILLDATE" || current_tag == "VOUCHERDATE" {

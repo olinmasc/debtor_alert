@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import InvoiceTable from "./InvoiceTable";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 interface Invoice {
   invoice_no: string;
@@ -282,8 +281,10 @@ export default function DashboardTab({ refreshKey }: DashboardTabProps) {
         <InvoiceTable
           invoices={filtered}
           loading={loading}
-          onRemind={async (invoiceNo) => {
-            await invoke("remind_invoice", { invoiceNo });
+          onRemind={async (invoiceNos) => {
+            for (const invoiceNo of invoiceNos) {
+              await invoke("remind_invoice", { invoiceNo });
+            }
             fetchInvoices();
           }}
           onMarkDone={async (invoiceNo) => {

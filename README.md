@@ -1,94 +1,36 @@
-# Debtor Alert — Outstanding Receivables Dashboard
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-An internal tool to ingest Tally "Outstanding Receivables" CSV/Excel exports, store them in PostgreSQL, and send structured WhatsApp reminders to debtors.
+## Getting Started
 
-![Dashboard](screenshot-dashboard.png)
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Next.js 16, React, Tailwind CSS v4, Lucide Icons |
-| Backend | Python, FastAPI, Pandas, SQLAlchemy |
-| Database | PostgreSQL |
-
-## Setup
-
-### Prerequisites
-
-- **Node.js** ≥ 18
-- **Python** ≥ 3.11
-- **PostgreSQL** running on `localhost:5432`
-
-### 1. Database
+First, run the development server:
 
 ```bash
-psql -U postgres -c "CREATE DATABASE debtor_alert;"
-```
-
-### 2. Backend
-
-```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-```
-
-The backend will auto-create the `debtors` and `invoices` tables on startup.
-
-### 3. Frontend
-
-```bash
-cd frontend
-npm install
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Features
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-### Dashboard (Tab 1)
-- Summary stat cards (Total Outstanding, Overdue Count, Critical, Avg Days)
-- Sortable data table with all open invoices
-- Color-coded overdue tiers: 🟡 1–15 days, 🟠 16–30 days, 🔴 30+ days
-- **Send WhatsApp** — opens `wa.me` link with pre-filled template message
-- **Copy** — copies the reminder message to clipboard
-- Search by debtor name or invoice number
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-### Import & Sync (Tab 2)
-- Drag-and-drop file upload (.csv, .xlsx, .xls)
-- Smart header detection for Tally exports
-- **Upsert logic** — creates new debtors/invoices or updates existing amounts
-- **Auto-reconciliation** — marks invoices as `Paid` if they disappear from the file
-- Missing phone number table with inline editing
+## Learn More
 
-### Templates (Tab 3)
-- 3 reminder tiers: Friendly, Firm, Urgent
-- Editable templates with variable placeholders: `[Debtor Name]`, `[Invoice No]`, `[Pending Amount]`, `[Days Overdue]`
-- Live preview with sample data
-- Persisted in `localStorage`
+To learn more about Next.js, take a look at the following resources:
 
-## API Endpoints
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/upload` | Upload CSV/Excel file for ingestion |
-| GET | `/api/invoices?status=Open` | List invoices (with debtor info + days_overdue) |
-| PATCH | `/api/invoices/{no}/remind` | Record a reminder was sent |
-| GET | `/api/debtors?missing_phone=true` | List debtors missing phone numbers |
-| PATCH | `/api/debtors/{id}` | Update debtor phone/contact info |
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Environment Variables
+## Deploy on Vercel
 
-**Backend** (`backend/.env`):
-```
-DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/debtor_alert
-```
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-**Frontend** (optional — defaults to `http://localhost:8000`):
-```
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
